@@ -1,7 +1,3 @@
-/**
- * Contratos HTTP para integração com API C# — substitua os endpoints pelos reais.
- * Com VITE_USE_MOCK=false, as stores podem passar a delegar para estas funções.
- */
 import { apiClient } from '@/api/client'
 import type { TaskItem } from '@/types'
 

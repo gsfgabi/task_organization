@@ -1,4 +1,5 @@
 import { seedTimeEntries } from '@/data/seed'
+import { useAuditStore } from '@/stores/audit'
 import type { ID, TimeEntry } from '@/types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -25,6 +26,12 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       .reduce((a, e) => a + e.hours, 0)
   }
 
+  function hoursForUserOnDate(userId: ID, date: string) {
+    return entries.value
+      .filter((e) => e.userId === userId && e.date === date)
+      .reduce((a, e) => a + e.hours, 0)
+  }
+
   function add(entry: Omit<TimeEntry, 'id' | 'createdAt'>) {
     const row: TimeEntry = {
       ...entry,
@@ -33,6 +40,12 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     }
     entries.value.push(row)
     syncTaskLoggedHours(entry.taskId)
+    useAuditStore().add({
+      action: 'time.create',
+      message: `Tempo registado: ${entry.hours}h em ${entry.date}`,
+      level: 'success',
+      detail: { entryId: row.id, taskId: entry.taskId },
+    })
     return row
   }
 
@@ -47,7 +60,15 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   function remove(id: ID) {
     const e = entries.value.find((x) => x.id === id)
     entries.value = entries.value.filter((x) => x.id !== id)
-    if (e) syncTaskLoggedHours(e.taskId)
+    if (e) {
+      syncTaskLoggedHours(e.taskId)
+      useAuditStore().add({
+        action: 'time.delete',
+        message: `Registo de tempo removido (${e.hours}h, ${e.date})`,
+        level: 'warning',
+        detail: { entryId: id, taskId: e.taskId },
+      })
+    }
   }
 
   function syncTaskLoggedHours(taskId: ID) {
@@ -56,7 +77,6 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     tasks.setLoggedHours(taskId, sum)
   }
 
-  /** Recalcula todas as tarefas (útil após import) */
   function resyncAllTasks() {
     const tasks = useTasksStore()
     const byTask = new Map<ID, number>()
@@ -73,6 +93,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     totalHours,
     byTask,
     hoursForUserInRange,
+    hoursForUserOnDate,
     add,
     update,
     remove,

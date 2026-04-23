@@ -8,6 +8,11 @@ import type {
   User,
 } from '@/types'
 
+const emptyTaskExtras = {
+  checklist: [] as TaskItem['checklist'],
+  attachments: [] as TaskItem['attachments'],
+}
+
 const allPerms: PermissionKey[] = [
   'tasks.read',
   'tasks.create',
@@ -23,6 +28,24 @@ const allPerms: PermissionKey[] = [
   'admin.roles',
   'reports.read',
   'reports.export',
+  'audit.read',
+]
+
+const directorPerms: PermissionKey[] = allPerms.filter(
+  (k) => k !== 'admin.roles' && k !== 'admin.users',
+)
+
+const managerPerms: PermissionKey[] = [
+  'tasks.read',
+  'tasks.create',
+  'tasks.update',
+  'tasks.delete',
+  'time.read',
+  'time.create',
+  'time.update',
+  'org.read',
+  'reports.read',
+  'reports.export',
 ]
 
 export const seedRoles: Role[] = [
@@ -33,14 +56,28 @@ export const seedRoles: Role[] = [
     permissionKeys: [...allPerms],
   },
   {
+    id: 'role-director',
+    name: 'Diretor',
+    description:
+      'Visão global: organização, auditoria e relatórios relativos à diretoria à qual está associado.',
+    permissionKeys: [...directorPerms],
+  },
+  {
     id: 'role-manager',
-    name: 'Gestor',
-    description: 'Gerencia setor, tarefas e relatórios.',
+    name: 'Gerente',
+    description:
+      'Gere os setores vinculados a si, tarefas, tempo e exportação de relatórios nesse âmbito.',
+    permissionKeys: [...managerPerms],
+  },
+  {
+    id: 'role-supervisor',
+    name: 'Supervisor',
+    description:
+      'Acompanha execução e relatórios no setor a que está vinculado; pode criar e editar tarefas, sem eliminar.',
     permissionKeys: [
       'tasks.read',
       'tasks.create',
       'tasks.update',
-      'tasks.delete',
       'time.read',
       'time.create',
       'time.update',
@@ -52,11 +89,13 @@ export const seedRoles: Role[] = [
   {
     id: 'role-member',
     name: 'Colaborador',
-    description: 'Executa tarefas e registra tempo.',
+    description:
+      'Cria, edita e elimina apenas as tarefas atribuídas a si; regista tempo sobre elas. Respeita a hierarquia (coordenação acima na estrutura).',
     permissionKeys: [
       'tasks.read',
       'tasks.create',
       'tasks.update',
+      'tasks.delete',
       'time.read',
       'time.create',
       'time.update',
@@ -84,6 +123,8 @@ export const seedSectors: Sector[] = [
   { id: 'sec-fin', name: 'Financeiro', code: 'FIN', directorateId: 'dir-ops' },
 ]
 
+export const SEED_DEMO_LOGIN_PASSWORD = 'Demo123!'
+
 export const seedUsers: User[] = [
   {
     id: 'u-1',
@@ -100,6 +141,7 @@ export const seedUsers: User[] = [
     email: 'bruno.costa@empresa.com',
     roleIds: ['role-manager'],
     sectorId: 'sec-dev',
+    managedSectorIds: ['sec-dev', 'sec-qa'],
     directorateId: 'dir-tech',
     active: true,
   },
@@ -121,6 +163,25 @@ export const seedUsers: User[] = [
     directorateId: 'dir-ops',
     active: true,
   },
+  {
+    id: 'u-5',
+    name: 'Elena Ribeiro',
+    email: 'elena.ribeiro@empresa.com',
+    roleIds: ['role-director'],
+    sectorId: 'sec-fin',
+    directorateId: 'dir-ops',
+    active: true,
+  },
+  {
+    id: 'u-6',
+    name: 'Francisco Alves',
+    email: 'francisco.alves@empresa.com',
+    roleIds: ['role-supervisor'],
+    sectorId: 'sec-dev',
+    managedSectorIds: ['sec-dev'],
+    directorateId: 'dir-tech',
+    active: true,
+  },
 ]
 
 const now = new Date().toISOString()
@@ -136,7 +197,13 @@ export const seedTasks: TaskItem[] = [
     assigneeId: 'u-2',
     sectorId: 'sec-dev',
     directorateId: 'dir-tech',
-    tags: ['discovery', 'prioridade'],
+    tags: ['discovery', 'prioridade', 'documentacao'],
+    checklist: [
+      { id: 'cl-t1-a', label: 'Agendar workshop com stakeholders', done: true },
+      { id: 'cl-t1-b', label: 'Documentar regras de negócio', done: false },
+      { id: 'cl-t1-c', label: 'Validar escopo com gestor', done: false },
+    ],
+    attachments: [],
     estimatedHours: 16,
     loggedHours: 6,
     dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
@@ -154,6 +221,7 @@ export const seedTasks: TaskItem[] = [
     sectorId: 'sec-qa',
     directorateId: 'dir-tech',
     tags: ['frontend'],
+    ...emptyTaskExtras,
     estimatedHours: 8,
     loggedHours: 0,
     dueDate: null,
@@ -170,7 +238,8 @@ export const seedTasks: TaskItem[] = [
     assigneeId: 'u-1',
     sectorId: 'sec-dev',
     directorateId: 'dir-tech',
-    tags: ['segurança'],
+    tags: ['seguranca', 'compliance'],
+    ...emptyTaskExtras,
     estimatedHours: 12,
     loggedHours: 10,
     dueDate: new Date(Date.now() - 1 * 86400000).toISOString().slice(0, 10),
@@ -187,7 +256,8 @@ export const seedTasks: TaskItem[] = [
     assigneeId: 'u-4',
     sectorId: 'sec-log',
     directorateId: 'dir-ops',
-    tags: ['inventário'],
+    tags: ['inventario', 'operacoes'],
+    ...emptyTaskExtras,
     estimatedHours: 40,
     loggedHours: 38,
     dueDate: new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10),

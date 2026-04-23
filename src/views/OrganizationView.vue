@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -16,15 +18,21 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { usePermissions } from '@/composables/usePermissions'
+import { useAuditStore } from '@/stores/audit'
+import { useAuthStore } from '@/stores/auth'
 import { useOrgStore } from '@/stores/org'
 import { useRolesStore } from '@/stores/roles'
-import type { Directorate, Sector, User } from '@/types'
-import { Plus } from 'lucide-vue-next'
+import type { Directorate, ID, Sector, User } from '@/types'
+import { LogIn, Plus } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 const org = useOrgStore()
 const rolesStore = useRolesStore()
+const auth = useAuthStore()
+const audit = useAuditStore()
+const router = useRouter()
 const { can } = usePermissions()
 
 function papelLabels(u: User) {
@@ -74,7 +82,7 @@ function openSector(s?: Sector) {
 
 function openUser(u?: User) {
   editing.value = u
-    ? { ...u }
+    ? { ...u, managedSectorIds: u.managedSectorIds ? [...u.managedSectorIds] : undefined }
     : {
         id: `u-${shortId()}`,
         name: '',
@@ -85,6 +93,31 @@ function openUser(u?: User) {
         active: true,
       }
   dlg.value = 'user'
+}
+
+const sectorsForManagedEditor = computed(() => {
+  if (dlg.value !== 'user' || !editing.value) return [] as Sector[]
+  const u = editing.value as User
+  return org.sectors.filter((s) => s.directorateId === u.directorateId)
+})
+
+function managedSectorIdsList(u: User): ID[] {
+  return u.managedSectorIds?.length ? [...u.managedSectorIds] : [u.sectorId]
+}
+
+function managedSectorChecked(secId: ID): boolean {
+  if (dlg.value !== 'user' || !editing.value) return false
+  return managedSectorIdsList(editing.value as User).includes(secId)
+}
+
+function setManagedSector(secId: ID, checked: boolean) {
+  if (dlg.value !== 'user' || !editing.value) return
+  const u = editing.value as User
+  const next = new Set(managedSectorIdsList(u))
+  if (checked) next.add(secId)
+  else next.delete(secId)
+  if (next.size === 0) next.add(u.sectorId)
+  u.managedSectorIds = [...next]
 }
 
 function saveDir() {
@@ -126,6 +159,39 @@ function saveUser() {
   dlg.value = null
 }
 
+function accessAsUser(u: User) {
+  if (!can('admin.users')) {
+    toast.error('Sem permissão para aceder como outro utilizador.')
+    return
+  }
+  if (!auth.user) return
+  if (auth.user.id === u.id) {
+    toast.info('Já está nesta conta.')
+    return
+  }
+  if (!u.active) {
+    toast.error('Utilizador inativo.')
+    return
+  }
+  if (
+    !confirm(
+      `Entrar como «${u.name}»?\n\nA sua sessão actual fica guardada. Use o aviso no topo ou o menu para regressar.`,
+    )
+  ) {
+    return
+  }
+  audit.add({
+    action: 'auth.impersonate',
+    message: `Personificação iniciada: ${auth.user.name} → ${u.name}`,
+    level: 'warning',
+    marked: true,
+    detail: { fromUserId: auth.user.id, toUserId: u.id },
+  })
+  auth.startImpersonation(u)
+  toast.success(`Sessão como ${u.name}.`)
+  router.push({ name: 'dashboard' })
+}
+
 watch(
   () =>
     dlg.value === 'user' && editing.value
@@ -142,39 +208,93 @@ watch(
     if (first) u.sectorId = first.id
   },
 )
+
+watch(primaryRole, (rid) => {
+  if (dlg.value !== 'user' || !editing.value) return
+  const u = editing.value as User
+  if (rid === 'role-manager' || rid === 'role-supervisor') {
+    if (!u.managedSectorIds?.length) u.managedSectorIds = [u.sectorId]
+  } else {
+    u.managedSectorIds = undefined
+  }
+})
 </script>
 
 <template>
-  <div class="space-y-4 sm:space-y-6">
-    <p class="text-muted-foreground text-sm leading-relaxed sm:text-base">
-      Diretorias, setores e pessoas. Alterações exigem permissão de gestão.
-    </p>
+  <div class="space-y-8 pb-1">
+    <header class="space-y-2">
+      <p class="text-primary text-[11px] font-semibold tracking-wider uppercase sm:text-xs">
+        Estrutura
+      </p>
+      <h1 class="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
+        Organização
+      </h1>
+      <p class="text-muted-foreground max-w-2xl text-sm leading-relaxed sm:text-base">
+        Diretorias, setores e pessoas. Criar ou editar depende das suas permissões de gestão ou administração.
+      </p>
+    </header>
 
-    <Tabs default-value="dir" class="w-full">
-      <TabsList class="h-auto w-full max-w-full flex-wrap justify-start gap-1 sm:w-fit sm:flex-nowrap">
-        <TabsTrigger class="min-h-10 flex-1 sm:flex-none" value="dir">
+    <Tabs default-value="dir" class="w-full space-y-4">
+      <TabsList
+        class="bg-muted/40 ring-border/60 h-auto w-full max-w-full flex-wrap justify-stretch gap-1 rounded-xl p-1 ring-1 sm:w-fit sm:flex-nowrap"
+      >
+        <TabsTrigger
+          class="data-[state=active]:bg-card data-[state=active]:shadow-sm min-h-11 flex-1 rounded-lg sm:flex-none sm:px-5"
+          value="dir"
+        >
           Diretorias
         </TabsTrigger>
-        <TabsTrigger class="min-h-10 flex-1 sm:flex-none" value="sec">
+        <TabsTrigger
+          class="data-[state=active]:bg-card data-[state=active]:shadow-sm min-h-11 flex-1 rounded-lg sm:flex-none sm:px-5"
+          value="sec"
+        >
           Setores
         </TabsTrigger>
-        <TabsTrigger class="min-h-10 flex-1 sm:flex-none" value="usr">
+        <TabsTrigger
+          class="data-[state=active]:bg-card data-[state=active]:shadow-sm min-h-11 flex-1 rounded-lg sm:flex-none sm:px-5"
+          value="usr"
+        >
           Usuários
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="dir" class="mt-4 space-y-3">
-        <div class="flex justify-end">
+      <TabsContent value="dir" class="space-y-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button
             v-if="can('org.manage')"
             type="button"
+            size="lg"
+            class="min-h-12 w-full shadow-sm sm:min-h-11 sm:w-auto"
             @click="openDir()"
           >
             <Plus class="size-4" />
-            Diretoria
+            Nova diretoria
           </Button>
         </div>
-        <div class="-mx-1 overflow-x-auto rounded-xl border sm:mx-0">
+        <div class="space-y-3 lg:hidden">
+          <Card v-for="d in org.directorates" :key="d.id" class="rounded-2xl border-border/80 shadow-sm">
+            <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <p class="text-muted-foreground font-mono text-xs">
+                  {{ d.code }}
+                </p>
+                <p class="font-medium leading-snug">
+                  {{ d.name }}
+                </p>
+              </div>
+              <Button
+                v-if="can('org.manage')"
+                variant="secondary"
+                type="button"
+                class="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+                @click="openDir(d)"
+              >
+                Editar
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <div class="hidden overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm lg:block">
           <Table class="min-w-[320px]">
             <TableHeader>
               <TableRow>
@@ -204,18 +324,46 @@ watch(
         </div>
       </TabsContent>
 
-      <TabsContent value="sec" class="mt-4 space-y-3">
-        <div class="flex justify-end">
+      <TabsContent value="sec" class="space-y-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button
             v-if="can('org.manage')"
             type="button"
+            size="lg"
+            class="min-h-12 w-full shadow-sm sm:min-h-11 sm:w-auto"
             @click="openSector()"
           >
             <Plus class="size-4" />
-            Setor
+            Novo setor
           </Button>
         </div>
-        <div class="-mx-1 overflow-x-auto rounded-xl border sm:mx-0">
+        <div class="space-y-3 lg:hidden">
+          <Card v-for="s in org.sectors" :key="s.id" class="rounded-2xl border-border/80 shadow-sm">
+            <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0 space-y-1">
+                <p class="text-muted-foreground font-mono text-xs">
+                  {{ s.code }}
+                </p>
+                <p class="font-medium leading-snug">
+                  {{ s.name }}
+                </p>
+                <p class="text-muted-foreground text-sm">
+                  {{ org.directorateName(s.directorateId) }}
+                </p>
+              </div>
+              <Button
+                v-if="can('org.manage')"
+                variant="secondary"
+                type="button"
+                class="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+                @click="openSector(s)"
+              >
+                Editar
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <div class="hidden overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm lg:block">
           <Table class="min-w-[360px]">
             <TableHeader>
               <TableRow>
@@ -247,19 +395,65 @@ watch(
         </div>
       </TabsContent>
 
-      <TabsContent value="usr" class="mt-4 space-y-3">
-        <div class="flex justify-end">
+      <TabsContent value="usr" class="space-y-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button
             v-if="can('org.manage') || can('admin.users')"
             type="button"
+            size="lg"
+            class="min-h-12 w-full shadow-sm sm:min-h-11 sm:w-auto"
             @click="openUser()"
           >
             <Plus class="size-4" />
-            Usuário
+            Novo usuário
           </Button>
         </div>
-        <div class="-mx-1 overflow-x-auto rounded-xl border sm:mx-0">
-          <Table class="min-w-[640px]">
+        <div class="space-y-3 lg:hidden">
+          <Card v-for="u in org.users" :key="u.id" class="rounded-2xl border-border/80 shadow-sm">
+            <CardContent class="flex flex-col gap-4 p-4">
+              <div class="min-w-0 space-y-2">
+                <p class="font-medium leading-snug">
+                  {{ u.name }}
+                </p>
+                <p class="text-muted-foreground break-all text-sm">
+                  {{ u.email }}
+                </p>
+                <p class="text-muted-foreground text-sm text-pretty">
+                  {{ papelLabels(u) }}
+                </p>
+                <div class="text-sm">
+                  <span class="text-muted-foreground">Setor: </span>{{ org.sectorName(u.sectorId) }}
+                </div>
+                <div class="text-sm">
+                  <span class="text-muted-foreground">Diretoria: </span>{{ org.directorateName(u.directorateId) }}
+                </div>
+              </div>
+              <div class="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  v-if="can('org.manage') || can('admin.users')"
+                  variant="secondary"
+                  type="button"
+                  class="min-h-11 flex-1 sm:min-h-9"
+                  @click="openUser(u)"
+                >
+                  Editar
+                </Button>
+                <Button
+                  v-if="can('admin.users')"
+                  type="button"
+                  variant="outline"
+                  class="min-h-11 flex-1 gap-2 border-dashed sm:min-h-9"
+                  @click="accessAsUser(u)"
+                >
+                  <LogIn class="size-4 shrink-0" />
+                  Acessar como
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <div class="hidden overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm lg:block">
+          <Table class="min-w-[52rem]">
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
@@ -267,7 +461,9 @@ watch(
                 <TableHead>Papel</TableHead>
                 <TableHead>Setor</TableHead>
                 <TableHead>Diretoria</TableHead>
-                <TableHead class="w-[100px]" />
+                <TableHead class="min-w-[10rem] text-right">
+                  Ações
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -280,15 +476,29 @@ watch(
                 <TableCell>{{ org.sectorName(u.sectorId) }}</TableCell>
                 <TableCell>{{ org.directorateName(u.directorateId) }}</TableCell>
                 <TableCell class="text-right">
-                  <Button
-                    v-if="can('org.manage') || can('admin.users')"
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    @click="openUser(u)"
-                  >
-                    Editar
-                  </Button>
+                  <div class="flex flex-wrap justify-end gap-1">
+                    <Button
+                      v-if="can('org.manage') || can('admin.users')"
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      class="min-h-9"
+                      @click="openUser(u)"
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      v-if="can('admin.users')"
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      class="min-h-9 gap-1 border-dashed px-2"
+                      @click="accessAsUser(u)"
+                    >
+                      <LogIn class="size-3.5 shrink-0" />
+                      Acessar como
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -408,11 +618,33 @@ watch(
           <div class="grid gap-2">
             <Label>Papel (principal)</Label>
             <NativeSelect v-model="primaryRole" class="w-full max-w-full">
-              <NativeSelectOption value="role-admin">Administrador</NativeSelectOption>
-              <NativeSelectOption value="role-manager">Gestor</NativeSelectOption>
-              <NativeSelectOption value="role-member">Colaborador</NativeSelectOption>
-              <NativeSelectOption value="role-viewer">Visualizador</NativeSelectOption>
+              <NativeSelectOption v-for="r in rolesStore.roles" :key="r.id" :value="r.id">
+                {{ r.name }}
+              </NativeSelectOption>
             </NativeSelect>
+          </div>
+          <div
+            v-if="primaryRole === 'role-manager' || primaryRole === 'role-supervisor'"
+            class="grid gap-2"
+          >
+            <Label>Setores geridos</Label>
+            <p class="text-muted-foreground text-xs leading-relaxed">
+              Marque os setores desta diretoria que este utilizador coordena (vazio usa só o setor principal).
+            </p>
+            <div class="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+              <label
+                v-for="s in sectorsForManagedEditor"
+                :key="s.id"
+                class="flex cursor-pointer items-center gap-2 text-sm"
+              >
+                <Checkbox
+                  :checked="managedSectorChecked(s.id)"
+                  class="shrink-0"
+                  @update:checked="(v: boolean) => setManagedSector(s.id, v)"
+                />
+                <span>{{ s.name }}</span>
+              </label>
+            </div>
           </div>
         </div>
         <DialogFooter class="bg-muted/40 mt-0 shrink-0 rounded-b-xl border-t px-4 py-3 sm:px-6">

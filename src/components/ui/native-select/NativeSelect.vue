@@ -30,7 +30,7 @@ const delegatedProps = reactiveOmit(props, 'class', 'size')
 
 <template>
   <div
-    class="group/native-select relative w-fit has-[select:disabled]:opacity-50"
+    class="group/native-select relative w-full min-w-0 has-[select:disabled]:opacity-50"
     data-slot="native-select-wrapper"
     :data-size="props.size ?? 'default'"
   >
@@ -40,12 +40,23 @@ const delegatedProps = reactiveOmit(props, 'class', 'size')
       data-slot="native-select"
       :data-size="props.size ?? 'default'"
       :class="cn(
-        'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 h-8 w-full min-w-0 appearance-none rounded-lg border bg-transparent py-1 pr-8 pl-2.5 text-sm transition-colors select-none focus-visible:ring-3 aria-invalid:ring-3 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-[size=sm]:py-0.5 outline-none disabled:pointer-events-none disabled:cursor-not-allowed',
+        'border-border/80 bg-background text-foreground placeholder:text-muted-foreground',
+        'h-10 min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-md border py-2 pr-10 pl-3 text-sm',
+        'shadow-sm transition-[border-color,box-shadow,background-color] hover:border-primary/25 hover:shadow',
+        'focus-visible:border-ring focus-visible:ring-ring/45 focus-visible:ring-2 focus-visible:outline-none',
+        'aria-invalid:border-destructive aria-invalid:ring-destructive/25',
+        'dark:bg-input/35 dark:hover:bg-input/45 dark:border-input',
+        'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none',
+        'data-[size=sm]:h-9 data-[size=sm]:min-h-9 data-[size=sm]:rounded-md data-[size=sm]:py-1.5 data-[size=sm]:pl-2.5 data-[size=sm]:pr-9',
         props.class,
       )"
     >
       <slot />
     </select>
-    <ChevronDownIcon class="text-muted-foreground top-1/2 right-2.5 size-4 -translate-y-1/2 pointer-events-none absolute select-none" aria-hidden="true" data-slot="native-select-icon" />
+    <ChevronDownIcon
+      class="text-muted-foreground pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 select-none opacity-80"
+      aria-hidden="true"
+      data-slot="native-select-icon"
+    />
   </div>
 </template>

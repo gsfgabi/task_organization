@@ -61,6 +61,18 @@ const router = createRouter({
           component: () => import('@/views/ReportsView.vue'),
           meta: { title: 'Relatórios', permission: 'reports.read' },
         },
+        {
+          path: 'acompanhamento',
+          name: 'team-insights',
+          component: () => import('@/views/TeamInsightsView.vue'),
+          meta: { title: 'Acompanhamento', permission: 'reports.read' },
+        },
+        {
+          path: 'auditoria',
+          name: 'audit',
+          component: () => import('@/views/AuditView.vue'),
+          meta: { title: 'Auditoria', permission: 'audit.read' },
+        },
       ],
     },
     {

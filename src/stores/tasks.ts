@@ -1,5 +1,6 @@
 import { seedTasks } from '@/data/seed'
 import type { ID, TaskItem, TaskStatus } from '@/types'
+import { useAuditStore } from '@/stores/audit'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -54,6 +55,12 @@ export const useTasksStore = defineStore('tasks', () => {
       updatedAt: now,
     }
     tasks.value.push(row)
+    useAuditStore().add({
+      action: 'task.create',
+      message: `Tarefa criada: «${row.title}»`,
+      level: 'success',
+      detail: { taskId: row.id },
+    })
     return row
   }
 
@@ -82,7 +89,16 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   function remove(id: ID) {
-    tasks.value = tasks.value.filter((t) => t.id !== id)
+    const t = tasks.value.find((x) => x.id === id)
+    tasks.value = tasks.value.filter((x) => x.id !== id)
+    if (t) {
+      useAuditStore().add({
+        action: 'task.delete',
+        message: `Tarefa removida: «${t.title}»`,
+        level: 'warning',
+        detail: { taskId: id },
+      })
+    }
   }
 
   return {

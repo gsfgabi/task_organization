@@ -7,18 +7,20 @@ import {
   ClipboardList,
   Clock,
   LayoutDashboard,
+  ScrollText,
   Shield,
   Table2,
+  UsersRound,
 } from 'lucide-vue-next'
 import { RouterLink, useRoute } from 'vue-router'
 import { computed } from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    /** Itens mais altos (área de toque) no menu mobile */
     touchFriendly?: boolean
+    collapsed?: boolean
   }>(),
-  { touchFriendly: false },
+  { touchFriendly: false, collapsed: false },
 )
 
 const emit = defineEmits<{
@@ -40,7 +42,14 @@ const items = computed(() =>
       show: can('org.read'),
     },
     { to: '/admin/roles', label: 'Papéis', icon: Shield, show: can('admin.roles') },
+    { to: '/auditoria', label: 'Auditoria', icon: ScrollText, show: can('audit.read') },
     { to: '/reports', label: 'Relatórios', icon: Table2, show: can('reports.read') },
+    {
+      to: '/acompanhamento',
+      label: 'Acompanhamento',
+      icon: UsersRound,
+      show: can('reports.read'),
+    },
   ].filter((x) => x.show),
 )
 
@@ -66,10 +75,15 @@ function isActive(to: string) {
         as="a"
         :href="href"
         variant="ghost"
+        :title="collapsed ? item.label : undefined"
         :class="
           cn(
-            'w-full justify-start text-left',
-            touchFriendly ? 'min-h-12 gap-3 px-3 text-base' : 'gap-2',
+            'w-full text-left',
+            collapsed
+              ? 'min-h-10 justify-center px-0'
+              : touchFriendly
+                ? 'min-h-12 justify-start gap-3 px-3 text-base'
+                : 'min-h-10 justify-start gap-2 px-2 py-1.5 text-sm',
             isActive(item.to)
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
               : 'text-sidebar-foreground/90 hover:bg-sidebar-accent/80',
@@ -82,8 +96,13 @@ function isActive(to: string) {
           }
         "
       >
-        <component :is="item.icon" :class="touchFriendly ? 'size-5 shrink-0' : 'size-4 shrink-0'" />
-        {{ item.label }}
+        <component
+          :is="item.icon"
+          :class="
+            touchFriendly ? 'size-5 shrink-0' : collapsed ? 'size-5 shrink-0' : 'size-4 shrink-0'
+          "
+        />
+        <span v-if="!collapsed">{{ item.label }}</span>
       </Button>
     </RouterLink>
   </nav>

@@ -1,0 +1,1 @@
+export const MAX_HOURS_PER_CALENDAR_DAY = 12

@@ -27,6 +27,7 @@ export const PERMISSIONS = [
   'admin.roles',
   'reports.read',
   'reports.export',
+  'audit.read',
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]
@@ -46,6 +47,7 @@ export interface User {
   roleIds: ID[]
   sectorId: ID
   directorateId: ID
+  managedSectorIds?: ID[]
   active: boolean
 }
 
@@ -62,6 +64,20 @@ export interface Sector {
   directorateId: ID
 }
 
+export interface TaskChecklistItem {
+  id: ID
+  label: string
+  done: boolean
+}
+
+export interface TaskAttachment {
+  id: ID
+  name: string
+  mime: string
+  size: number
+  dataUrl: string
+}
+
 export interface TaskItem {
   id: ID
   title: string
@@ -73,9 +89,9 @@ export interface TaskItem {
   sectorId: ID
   directorateId: ID
   tags: string[]
-  /** Estimativa em horas */
+  checklist: TaskChecklistItem[]
+  attachments: TaskAttachment[]
   estimatedHours: number
-  /** Soma de registros — mantida pelo store ao sincronizar tempo */
   loggedHours: number
   dueDate: string | null
   createdAt: string
@@ -86,7 +102,6 @@ export interface TimeEntry {
   id: ID
   taskId: ID
   userId: ID
-  /** ISO date yyyy-mm-dd */
   date: string
   hours: number
   note: string

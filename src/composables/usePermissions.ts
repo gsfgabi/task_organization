@@ -1,11 +1,13 @@
+import { useTaskScope } from '@/composables/useTaskScope'
 import { useAuthStore } from '@/stores/auth'
 import { useRolesStore } from '@/stores/roles'
-import type { PermissionKey } from '@/types'
+import type { PermissionKey, TaskItem } from '@/types'
 import { computed } from 'vue'
 
 export function usePermissions() {
   const auth = useAuthStore()
   const roles = useRolesStore()
+  const { scope } = useTaskScope()
 
   const permissionKeys = computed(() => {
     const set = new Set<PermissionKey>()
@@ -20,5 +22,17 @@ export function usePermissions() {
     return permissionKeys.value.has(permission)
   }
 
-  return { permissionKeys, can }
+  function canUpdateTask(task: Pick<TaskItem, 'assigneeId'>) {
+    if (!can('tasks.update')) return false
+    if (scope.value === 'own' && task.assigneeId !== auth.user?.id) return false
+    return true
+  }
+
+  function canDeleteTask(task: Pick<TaskItem, 'assigneeId'>) {
+    if (!can('tasks.delete')) return false
+    if (scope.value === 'own' && task.assigneeId !== auth.user?.id) return false
+    return true
+  }
+
+  return { permissionKeys, can, canUpdateTask, canDeleteTask }
 }

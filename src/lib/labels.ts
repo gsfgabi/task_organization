@@ -24,7 +24,6 @@ export const taskPriorityLabels: Record<TaskPriority, string> = {
   urgent: 'Urgente',
 }
 
-/** Colunas exibidas no quadro Kanban */
 export const kanbanStatuses: TaskStatus[] = [
   'backlog',
   'todo',
@@ -48,4 +47,5 @@ export const permissionLabels: Record<string, string> = {
   'admin.roles': 'Administrar papéis',
   'reports.read': 'Ver relatórios',
   'reports.export': 'Exportar relatórios',
+  'audit.read': 'Ver auditoria',
 }

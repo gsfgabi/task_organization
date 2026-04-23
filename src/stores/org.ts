@@ -1,4 +1,5 @@
 import { seedDirectorates, seedSectors, seedUsers } from '@/data/seed'
+import { useAuditStore } from '@/stores/audit'
 import type { Directorate, ID, Sector, User } from '@/types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -22,8 +23,15 @@ export const useOrgStore = defineStore('org', () => {
 
   function upsertDirectorate(d: Directorate) {
     const i = directorates.value.findIndex((x) => x.id === d.id)
+    const created = i === -1
     if (i === -1) directorates.value.push({ ...d })
     else directorates.value[i] = { ...d }
+    useAuditStore().add({
+      action: created ? 'org.directorate.create' : 'org.directorate.update',
+      message: `${created ? 'Diretoria criada' : 'Diretoria atualizada'}: ${d.name} (${d.code})`,
+      level: 'info',
+      detail: { directorateId: d.id },
+    })
   }
 
   function removeDirectorate(id: ID) {
@@ -33,8 +41,15 @@ export const useOrgStore = defineStore('org', () => {
 
   function upsertSector(s: Sector) {
     const i = sectors.value.findIndex((x) => x.id === s.id)
+    const created = i === -1
     if (i === -1) sectors.value.push({ ...s })
     else sectors.value[i] = { ...s }
+    useAuditStore().add({
+      action: created ? 'org.sector.create' : 'org.sector.update',
+      message: `${created ? 'Setor criado' : 'Setor atualizado'}: ${s.name} (${s.code})`,
+      level: 'info',
+      detail: { sectorId: s.id },
+    })
   }
 
   function removeSector(id: ID) {
@@ -43,8 +58,15 @@ export const useOrgStore = defineStore('org', () => {
 
   function upsertUser(u: User) {
     const i = users.value.findIndex((x) => x.id === u.id)
+    const created = i === -1
     if (i === -1) users.value.push({ ...u })
     else users.value[i] = { ...u }
+    useAuditStore().add({
+      action: created ? 'org.user.create' : 'org.user.update',
+      message: `${created ? 'Utilizador criado' : 'Utilizador atualizado'}: ${u.name} <${u.email}>`,
+      level: 'info',
+      detail: { userId: u.id },
+    })
   }
 
   function removeUser(id: ID) {

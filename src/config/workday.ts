@@ -1,4 +1,3 @@
-/** Horas consideradas como 1 dia útil para conversão horas ↔ dias na UI */
 export const WORKDAY_HOURS = 8
 
 export function hoursToWorkdays(hours: number): number {

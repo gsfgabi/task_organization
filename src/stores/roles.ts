@@ -1,4 +1,5 @@
 import { seedRoles } from '@/data/seed'
+import { useAuditStore } from '@/stores/audit'
 import type { ID, PermissionKey, Role } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -12,7 +13,15 @@ export const useRolesStore = defineStore('roles', () => {
 
   function setRolePermissions(roleId: ID, keys: PermissionKey[]) {
     const r = roles.value.find((x) => x.id === roleId)
-    if (r) r.permissionKeys = [...keys]
+    if (r) {
+      r.permissionKeys = [...keys]
+      useAuditStore().add({
+        action: 'admin.role.permissions',
+        message: `Permissões do papel «${r.name}» atualizadas (${keys.length} chaves)`,
+        level: 'warning',
+        detail: { roleId },
+      })
+    }
   }
 
   function updateRole(partial: Pick<Role, 'id'> & Partial<Omit<Role, 'id'>>) {

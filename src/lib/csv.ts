@@ -1,4 +1,3 @@
-/** Exporta CSV com separador `;` e BOM UTF-8 para Excel em pt-BR */
 export function downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {
   const escape = (c: string | number) => {
     const s = String(c)

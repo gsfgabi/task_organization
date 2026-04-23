@@ -139,7 +139,34 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: clip;
+  }
+
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    color-scheme: light dark;
+  }
+
+  #app {
+    min-height: 100dvh;
+    isolation: isolate;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  ::selection {
+    @apply bg-primary/15 text-foreground;
   }
 }
