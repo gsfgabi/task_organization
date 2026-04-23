@@ -36,9 +36,7 @@ function saveToStorage(entries: AuditEntry[]) {
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)))
-  } catch {
-    /* ignore quota */
-  }
+  } catch {}
 }
 
 export const useAuditStore = defineStore('audit', () => {

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { usePermissions } from '@/composables/usePermissions'
 import { cn } from '@/lib/utils'
 import {
+  Braces,
   Building2,
   ClipboardList,
   Clock,
@@ -50,6 +51,7 @@ const items = computed(() =>
       icon: UsersRound,
       show: can('reports.read'),
     },
+    { to: '/api-docs', label: 'API (Swagger)', icon: Braces, show: true },
   ].filter((x) => x.show),
 )
 
