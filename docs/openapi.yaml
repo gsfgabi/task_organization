@@ -1,0 +1,850 @@
+openapi: 3.0.3
+info:
+  title: Task Org API (contrato para backend)
+  description: >
+    Especificação mínima alinhada ao frontend Vue em `task_organization`.
+    Rotas com prefixo `/api`; ajustar `servers.url` ao ambiente real.
+  version: 0.1.0
+
+servers:
+  - url: https://api.exemplo.com
+    description: Produção (exemplo)
+  - url: http://localhost:5000
+    description: Desenvolvimento local
+
+tags:
+  - name: Auth
+  - name: Organization
+  - name: Roles
+  - name: Tasks
+  - name: TimeEntries
+  - name: Reports
+  - name: Audit
+  - name: Admin
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Credenciais conforme política do backend (email/senha, etc.)
+      responses:
+        '200':
+          description: Sessão iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSession'
+        '401':
+          description: Credenciais inválidas
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (opcional)
+      responses:
+        '204':
+          description: Sessão terminada
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Utilizador atual
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/directorates:
+    get:
+      tags: [Organization]
+      summary: Listar diretorias
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Directorate'
+    post:
+      tags: [Organization]
+      summary: Criar diretoria
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Directorate'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Directorate'
+
+  /api/directorates/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [Organization]
+      summary: Atualizar diretoria
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Directorate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Directorate'
+    delete:
+      tags: [Organization]
+      summary: Remover diretoria
+      responses:
+        '204':
+          description: Removida
+
+  /api/sectors:
+    get:
+      tags: [Organization]
+      summary: Listar setores
+      parameters:
+        - name: directorateId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sector'
+    post:
+      tags: [Organization]
+      summary: Criar setor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sector'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sector'
+
+  /api/sectors/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [Organization]
+      summary: Atualizar setor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sector'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sector'
+    delete:
+      tags: [Organization]
+      summary: Remover setor
+      responses:
+        '204':
+          description: Removido
+
+  /api/users:
+    get:
+      tags: [Organization]
+      summary: Listar utilizadores
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags: [Organization]
+      summary: Criar utilizador
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [Organization]
+      summary: Atualizar utilizador
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      tags: [Organization]
+      summary: Remover utilizador
+      responses:
+        '204':
+          description: Removido
+
+  /api/roles:
+    get:
+      tags: [Roles]
+      summary: Listar papéis
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+  /api/roles/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [Roles]
+      summary: Atualizar papel e permissões
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+
+  /api/tasks:
+    get:
+      tags: [Tasks]
+      summary: Listar tarefas
+      description: Referenciado em `src/api/http/tasks.stub.ts`
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskItem'
+    post:
+      tags: [Tasks]
+      summary: Criar tarefa
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskItemCreate'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItem'
+
+  /api/tasks/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Tasks]
+      summary: Obter tarefa
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItem'
+    patch:
+      tags: [Tasks]
+      summary: Atualizar tarefa (parcial)
+      description: Referenciado em `src/api/http/tasks.stub.ts`
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskItem'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskItem'
+    delete:
+      tags: [Tasks]
+      summary: Eliminar tarefa
+      responses:
+        '204':
+          description: Eliminada
+
+  /api/time-entries:
+    get:
+      tags: [TimeEntries]
+      summary: Listar registos de tempo
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+        - name: taskId
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeEntry'
+    post:
+      tags: [TimeEntries]
+      summary: Criar registo de tempo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEntryCreate'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+
+  /api/time-entries/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [TimeEntries]
+      summary: Atualizar registo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeEntry'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+    delete:
+      tags: [TimeEntries]
+      summary: Remover registo
+      responses:
+        '204':
+          description: Removido
+
+  /api/reports/summary:
+    get:
+      tags: [Reports]
+      summary: Agregados para relatórios
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportRow'
+
+  /api/reports/export:
+    get:
+      tags: [Reports]
+      summary: Exportar CSV
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ficheiro CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+
+  /api/audit:
+    get:
+      tags: [Audit]
+      summary: Listar eventos de auditoria
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditEntry'
+
+  /api/audit/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [Audit]
+      summary: Atualizar evento (ex. marked)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditEntry'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEntry'
+
+  /api/admin/impersonation/start:
+    post:
+      tags: [Admin]
+      summary: Iniciar personificação (opcional)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetUserId:
+                  type: string
+      responses:
+        '200':
+          description: Nova sessão / token conforme política
+
+  /api/admin/impersonation/stop:
+    post:
+      tags: [Admin]
+      summary: Terminar personificação (opcional)
+      responses:
+        '204':
+          description: Restaurada sessão anterior
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    PermissionKey:
+      type: string
+      enum:
+        - tasks.read
+        - tasks.create
+        - tasks.update
+        - tasks.delete
+        - time.read
+        - time.create
+        - time.update
+        - time.delete
+        - org.read
+        - org.manage
+        - admin.users
+        - admin.roles
+        - reports.read
+        - reports.export
+        - audit.read
+
+    Directorate:
+      type: object
+      required: [id, name, code]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+
+    Sector:
+      type: object
+      required: [id, name, code, directorateId]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        directorateId:
+          type: string
+
+    Role:
+      type: object
+      required: [id, name, description, permissionKeys]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissionKeys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionKey'
+
+    User:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - roleIds
+        - sectorId
+        - directorateId
+        - active
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: string
+        roleIds:
+          type: array
+          items:
+            type: string
+        sectorId:
+          type: string
+        directorateId:
+          type: string
+        managedSectorIds:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+
+    AuthSession:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    TaskChecklistItem:
+      type: object
+      required: [id, label, done]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        done:
+          type: boolean
+
+    TaskAttachment:
+      type: object
+      required: [id, name, mime, size, dataUrl]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mime:
+          type: string
+        size:
+          type: number
+        dataUrl:
+          type: string
+          description: Em produção pode ser substituído por URL de armazenamento.
+
+    TaskItemCreate:
+      type: object
+      description: >
+        Corpo de criação; o servidor pode preencher id, createdAt, updatedAt, loggedHours
+        e normalizar anexos/checklist.
+      required:
+        - title
+        - description
+        - status
+        - difficulty
+        - priority
+        - assigneeId
+        - sectorId
+        - directorateId
+        - tags
+        - checklist
+        - attachments
+        - estimatedHours
+        - dueDate
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - backlog
+            - todo
+            - in_progress
+            - review
+            - done
+            - cancelled
+        difficulty:
+          type: string
+          enum: [trivial, easy, medium, hard, epic]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        assigneeId:
+          type: string
+        sectorId:
+          type: string
+        directorateId:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskChecklistItem'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskAttachment'
+        estimatedHours:
+          type: number
+        dueDate:
+          type: string
+          nullable: true
+
+    TaskItem:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - status
+        - difficulty
+        - priority
+        - assigneeId
+        - sectorId
+        - directorateId
+        - tags
+        - checklist
+        - attachments
+        - estimatedHours
+        - loggedHours
+        - dueDate
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - backlog
+            - todo
+            - in_progress
+            - review
+            - done
+            - cancelled
+        difficulty:
+          type: string
+          enum: [trivial, easy, medium, hard, epic]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        assigneeId:
+          type: string
+        sectorId:
+          type: string
+        directorateId:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskChecklistItem'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskAttachment'
+        estimatedHours:
+          type: number
+        loggedHours:
+          type: number
+        dueDate:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TimeEntryCreate:
+      type: object
+      required: [taskId, userId, date, hours, note]
+      properties:
+        taskId:
+          type: string
+        userId:
+          type: string
+        date:
+          type: string
+          description: Data YYYY-MM-DD
+        hours:
+          type: number
+        note:
+          type: string
+
+    TimeEntry:
+      type: object
+      required: [id, taskId, userId, date, hours, note, createdAt]
+      properties:
+        id:
+          type: string
+        taskId:
+          type: string
+        userId:
+          type: string
+        date:
+          type: string
+          description: Data YYYY-MM-DD
+        hours:
+          type: number
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ReportRow:
+      type: object
+      required: [userId, userName, sectorName, hours, tasksCompleted]
+      properties:
+        userId:
+          type: string
+        userName:
+          type: string
+        sectorName:
+          type: string
+        hours:
+          type: number
+        tasksCompleted:
+          type: number
+
+    AuditEntry:
+      type: object
+      required: [id, ts, actorName, action, message, level, marked]
+      properties:
+        id:
+          type: string
+        ts:
+          type: string
+          format: date-time
+        actorId:
+          type: string
+          nullable: true
+          description: Pode ser null para eventos de sistema.
+        actorName:
+          type: string
+        action:
+          type: string
+        message:
+          type: string
+        level:
+          type: string
+          enum: [info, success, warning, danger]
+        marked:
+          type: boolean
+        detail:
+          type: object
+          additionalProperties: true

@@ -2,6 +2,11 @@
 
 SPA em **Vue 3**, **Vite**, **TypeScript**, **Pinia**, **Vue Router** e interface com **shadcn-vue** (Tailwind CSS v4). Paleta institucional: verde escuro `#006652`, amarelo `#ffc571`, verde claro `#5bdc9e` (tokens em `src/assets/globals.css`).
 
+## Documentação da API (backend)
+
+- [Contrato em texto](docs/API.md) — rotas esperadas e convenções.
+- [OpenAPI 3.0](docs/openapi.yaml) — paths e schemas para importar no Swagger/Redoc.
+
 ## Scripts
 
 ```bash
