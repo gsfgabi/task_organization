@@ -1,5 +1,13 @@
 # Task Organization (frontend)
 
+![Login](docs/screenshots/01-login.png)
+
+![Painel](docs/screenshots/02-painel.png)
+
+Demo: [task-organization.vercel.app](https://task-organization.vercel.app/)
+
+SPA em **Vue 3**, **Vite**, **TypeScript**, **Pinia**, **Vue Router** e interface com **shadcn-vue** (Tailwind CSS v4). Paleta institucional: verde escuro `#006652`, amarelo `#ffc571`, verde claro `#5bdc9e` (tokens em `src/assets/globals.css`).
+
 ## Scripts
 
 ```bash
